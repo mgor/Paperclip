@@ -19,6 +19,8 @@ import java.io.OutputStream;
 import java.io.Reader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
@@ -112,7 +114,18 @@ public final class Paperclip {
         final MessageDigest digest,
         final PatchData patchData
     ) {
-        final Path cache = Paths.get("cache");
+        Path cache = Paths.get("cache");
+
+        if (Boolean.getBoolean("paperclip.enterprise")) {
+            try {
+                final URI baseURI = Paperclip.class.getProtectionDomain().getCodeSource().getLocation().toURI();
+                final String basePath = Paths.get(baseURI).getParent().toString();
+                cache = Paths.get(basePath, "cache");
+            } catch (final URISyntaxException e) {
+                // pass, will be as it was
+            }
+        }
+
         final Path paperJar = cache.resolve("patched_" + patchData.version + ".jar");
 
         if (!isJarInvalid(digest, paperJar, patchData.patchedHash)) {
